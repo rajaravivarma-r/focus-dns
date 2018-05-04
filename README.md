@@ -122,3 +122,8 @@ FAQ
 
 - Q: How do I stop Focus?
 - A: Press `Ctrl-c`, just like you would terminate any running bash process.
+
+TODO
+====
+
+[ ] Add another threaded application server like flask to show motivational quotes while opening the procrastinating sites.
