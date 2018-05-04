@@ -30,7 +30,7 @@ your filtering rules as simple or as complex as you want.
 The default filter rules is created on first startup in `$FOCUS_ROOT/focus_blacklist.py`:
 
 ```python
-def domain_ycombinator_com(dt):
+def domain_news_ycombinator_com(dt):
     # return dt.hour % 2 # every other hour
     return False
 
