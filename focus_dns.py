@@ -35,7 +35,7 @@ def default(domain, dt):
     # do something with regular expressions here?
     return True
 """.strip()
-BLACKLIST_FILE = os.path.join(FOCUS_ROOT, "etc", "focus_blacklist.py")
+BLACKLIST_FILE = os.path.join(FOCUS_ROOT, "focus_blacklist.py")
 # these are special characters that are common to domain names but must be
 # replaced with an underscore in order for the domain name to be referenced
 # as a function in focus_blacklist.  for example, you cannot call
