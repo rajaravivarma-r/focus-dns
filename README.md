@@ -46,6 +46,16 @@ def default(domain, dt):
     return True
 ```
 
+You can test it with `dig` command.
+```
+> dig @127.0.0.1 facebook.com +short
+127.0.0.1
+> dig @127.0.0.1 news.ycombinator.com +short
+127.0.0.1
+> dig @127.0.0.1 reddit.com +short
+127.0.0.1
+```
+
 The format is simple; Just define a function named like the domain you
 want to block, preceeded by "domain_".  Have it take a single datetime object
 and have it return True or False.  In the body, you can write whatever logic
