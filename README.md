@@ -1,7 +1,7 @@
 First things first: I copied code from https://github.com/hubdotcom/marlon-tools
 and https://github.com/amoffat/focus to build a custom DNS server facilitating my needs.
 
-(focus-dns.py) Focus.py helps you keep focused by applying schedulable firewall rules
+focus-dns.py helps you keep focused by applying schedulable firewall rules
 to distracting websites.  An example firewall rule looks like this:
 
 ``` python
@@ -103,7 +103,7 @@ Options:
 How it works
 ============
 
-Focus.py is, at its core, a DNS server.  By making it your primary nameserver,
+focus-dns.py is, at its core, a DNS server.  By making it your primary nameserver,
 it receives all DNS lookup requests.  Based on the domain name being requested,
 it either responds with a "fail ip" address (blocked), or passes the request
 on to your other nameservers (not blocked).  In both cases, Focus adjusts the TTL of each
