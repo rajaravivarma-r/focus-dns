@@ -173,7 +173,7 @@ def refresh_blacklist():
     # we also check for not exists because the pyc file may be left around.
     # in that case, blacklist name will exist, but the file will not
     if not blacklist or not exists(BLACKLIST_FILE):
-        print("couldn't find %s, creating a default blacklist", BLACKLIST_FILE)
+        print("couldn't find %s, creating a default blacklist" % BLACKLIST_FILE)
         with open(BLACKLIST_FILE, "w") as h:
             h.write(DEFAULT_BLACKLIST)
         import focus_blacklist as blacklist
@@ -181,7 +181,7 @@ def refresh_blacklist():
     # has it changed?
     changed = os.stat(BLACKLIST_FILE).st_mtime
     if changed > BLACKLIST_LAST_CHECKED:
-        print("blacklist %s changed, reloading", BLACKLIST_FILE)
+        print("blacklist %s changed, reloading" % BLACKLIST_FILE)
         reload(blacklist)
         BLACKLIST_LAST_CHECKED = changed
 
