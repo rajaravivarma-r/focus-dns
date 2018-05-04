@@ -111,4 +111,4 @@ FAQ
 - A: Focus needs to listen on a privileged port as a DNS server.
 
 - Q: How do I stop Focus?
-- A: Focus writes its process id to /var/run/focus.py.pid.  Kill the process using this process id.
+- A: Press `Ctrl-c`, just like you would terminate any running bash process.
