@@ -8,6 +8,7 @@ import os
 import re
 from os.path import exists
 import socket
+from socket import timeout
 import struct
 import time
 from datetime import datetime
@@ -261,6 +262,10 @@ class DNSProxyHandler(BaseRequestHandler):
                     return
 
         rspdata = self._get_response(reqdata)
+
+        if not rspdata:
+            return
+
         if not self.server.disable_cache:
             cache[cache_key] = Struct(rspdata=rspdata,
                                       cache_time=int(time.time()))
@@ -269,12 +274,17 @@ class DNSProxyHandler(BaseRequestHandler):
     def _get_response(self, data):
         # socket for the remote DNS server
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.connect((self.server.dns_server, 53))
-        sock.sendall(data)
-        sock.settimeout(60)
-        rspdata = sock.recv(65535)
-        sock.close()
-        return rspdata
+        try:
+            sock.connect((self.server.dns_server, 53))
+            sock.sendall(data)
+            sock.settimeout(60)
+            rspdata = sock.recv(65535)
+            sock.close()
+            return rspdata
+        except timeout:
+            print('Fetching DNS response from dns_server timed out')
+        finally:
+            sock.close()
 
     def _generate_dns_response_data(self, reqdata, q, packed_ip):
         # header, qd=1, an=1, ns=0, ar=0
