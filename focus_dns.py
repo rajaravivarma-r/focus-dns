@@ -16,9 +16,6 @@ DEFAULT_FILE = os.path.join(os.path.dirname(__file__), 'hosts')
 FOCUS_ROOT = os.environ.get('FOCUS_ROOT')
 BLACKLIST_LAST_CHECKED = 0
 DEFAULT_BLACKLIST = """
-import re
-
-
 def domain_news_ycombinator_com(dt):
     # return dt.hour % 2 # every other hour
     return False
