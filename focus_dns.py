@@ -282,7 +282,11 @@ class DNSProxyHandler(BaseRequestHandler):
             sock.close()
             return rspdata
         except timeout:
-            print('Fetching DNS response from dns_server timed out')
+            print(
+                'Fetching DNS response from {} timed out'.format(
+                    self.server.dns_server
+                )
+            )
         finally:
             sock.close()
 
