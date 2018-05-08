@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from SocketServer import BaseRequestHandler, ThreadingUDPServer
-from cStringIO import StringIO
+from socketserver import BaseRequestHandler, ThreadingUDPServer
+from io import StringIO
 import sys
 import os
 import re
@@ -198,7 +198,7 @@ def can_visit(domain):
     #
     # and if one still isn't found, we go with default(), if it exists
     parts = domain.split(".")
-    for i in xrange(len(parts) - 1):
+    for i in range(len(parts) - 1):
         domain_fn_name = "domain_" + ".".join(parts[i:])
         domain_fn_name = re.sub(
             "[" + DOMAIN_SPECIAL_CHARACTERS + "]",
