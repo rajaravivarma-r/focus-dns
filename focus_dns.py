@@ -279,7 +279,6 @@ class DNSProxyHandler(BaseRequestHandler):
             sock.sendall(data)
             sock.settimeout(60)
             rspdata = sock.recv(65535)
-            sock.close()
             return rspdata
         except timeout:
             print(
