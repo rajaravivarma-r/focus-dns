@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from __future__ import print_function
 from SocketServer import BaseRequestHandler, ThreadingUDPServer
 from cStringIO import StringIO
 import sys
@@ -171,7 +172,9 @@ def refresh_blacklist():
     # we also check for not exists because the pyc file may be left around.
     # in that case, blacklist name will exist, but the file will not
     if not blacklist or not exists(BLACKLIST_FILE):
-        print("couldn't find %s, creating a default blacklist" % BLACKLIST_FILE)
+        print(
+            "couldn't find %s, creating a default blacklist" % BLACKLIST_FILE
+        )
         with open(BLACKLIST_FILE, "w") as h:
             h.write(DEFAULT_BLACKLIST)
         import focus_blacklist as blacklist
@@ -286,6 +289,8 @@ class DNSProxyHandler(BaseRequestHandler):
                     self.server.dns_server
                 )
             )
+        except socket.error as err:
+            print(err)
         finally:
             sock.close()
 
