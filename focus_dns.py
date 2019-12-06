@@ -14,8 +14,8 @@ import struct
 import time
 from datetime import datetime
 
-DEFAULT_FILE = os.path.join(os.path.dirname(__file__), 'hosts')
-FOCUS_ROOT = os.environ.get('FOCUS_ROOT')
+DEFAULT_FILE = os.path.join(os.path.dirname(__file__), "hosts")
+FOCUS_ROOT = os.environ.get("FOCUS_ROOT")
 BLACKLIST_LAST_CHECKED = 0
 DEFAULT_BLACKLIST = """
 def domain_news_ycombinator_com(dt):
@@ -48,7 +48,7 @@ try:
 except ImportError:
     blacklist = None
 
-'''
+"""
 A simple DNS proxy server, support wilcard hosts, IPv6, cache. Usage:
 
 Edit /etc/hosts, add:
@@ -63,89 +63,117 @@ $ dig test.local
 The result should contains 127.0.0.1.
 
 author: marlonyao<yaolei135@gmail.com>
-'''
+"""
+
+
 def main():
     import optparse
     import sys
+
     parser = optparse.OptionParser()
-    parser.add_option('-f',
-                      '--hosts-file',
-                      dest='hosts_file', metavar='<file>',
-                      default=DEFAULT_FILE,
-                      help='specify hosts file, default %s' % DEFAULT_FILE)
-    parser.add_option('-H',
-                      '--host',
-                      dest='host',
-                      default='127.0.0.1',
-                      help='specify the address to listen on')
-    parser.add_option('-p',
-                      '--port',
-                      dest='port',
-                      default=53,
-                      type='int',
-                      help='specify the port to listen on')
-    parser.add_option('-s',
-                      '--server',
-                      dest='dns_server',
-                      metavar='SERVER',
-                      help='Required: specify the delegating dns server')
-    parser.add_option('-C',
-                      '--no-cache',
-                      dest='disable_cache',
-                      default=False,
-                      action='store_true',
-                      help='disable dns cache')
+    parser.add_option(
+        "-f",
+        "--hosts-file",
+        dest="hosts_file",
+        metavar="<file>",
+        default=DEFAULT_FILE,
+        help="specify hosts file, default %s" % DEFAULT_FILE,
+    )
+    parser.add_option(
+        "-H",
+        "--host",
+        dest="host",
+        default="127.0.0.1",
+        help="specify the address to listen on",
+    )
+    parser.add_option(
+        "-p",
+        "--port",
+        dest="port",
+        default=53,
+        type="int",
+        help="specify the port to listen on",
+    )
+    parser.add_option(
+        "-s",
+        "--server",
+        dest="dns_server",
+        metavar="SERVER",
+        help="Required: specify the delegating dns server",
+    )
+    parser.add_option(
+        "-b",
+        "--backup-server",
+        dest="backup_server",
+        metavar="BACKUPSERVER",
+        help="Required: specify the delegating backup dns server",
+    )
+    parser.add_option(
+        "-C",
+        "--no-cache",
+        dest="disable_cache",
+        default=False,
+        action="store_true",
+        help="disable dns cache",
+    )
 
     opts, args = parser.parse_args()
     if not opts.dns_server:
         parser.print_help()
         sys.exit(1)
-    dnsserver = DNSProxyServer(opts.dns_server,
-                               disable_cache=opts.disable_cache,
-                               host=opts.host,
-                               port=opts.port,
-                               hosts_file=opts.hosts_file)
+    dnsserver = DNSProxyServer(
+        opts.dns_server,
+        opts.backup_server,
+        disable_cache=opts.disable_cache,
+        host=opts.host,
+        port=opts.port,
+        hosts_file=opts.hosts_file,
+    )
     dnsserver.serve_forever()
 
-class Struct(object):
 
+class Struct(object):
     def __init__(self, **kwargs):
         for name, value in kwargs.items():
             setattr(self, name, value)
 
+
 def parse_dns_message(data):
     message = StringIO(data)
-    message.seek(4)     # skip id, flag
-    c_qd, c_an, c_ns, c_ar = struct.unpack('!4H', message.read(8))
+    message.seek(4)  # skip id, flag
+    c_qd, c_an, c_ns, c_ar = struct.unpack("!4H", message.read(8))
     # parse question
     question = parse_dns_question(message)
-    for i in range(1, c_qd):    # skip other question
+    for i in range(1, c_qd):  # skip other question
         parse_dns_question(message)
     records = []
-    for i in range(c_an+c_ns+c_ar):
+    for i in range(c_an + c_ns + c_ar):
         records.append(parse_dns_record(message))
     return Struct(question=question, records=records)
 
+
 def parse_dns_question(message):
     qname = parse_domain_name(message)
-    qtype, qclass = struct.unpack('!HH', message.read(4))
+    qtype, qclass = struct.unpack("!HH", message.read(4))
     end_offset = message.tell()
     return Struct(name=qname, type_=qtype, class_=qclass, end_offset=end_offset)
 
+
 def parse_dns_record(message):
-    parse_domain_name(message)      # skip name
-    message.seek(4, os.SEEK_CUR)    # skip type, class
+    parse_domain_name(message)  # skip name
+    message.seek(4, os.SEEK_CUR)  # skip type, class
     ttl_offset = message.tell()
-    ttl = struct.unpack('!I', message.read(4))[0]
-    rd_len = struct.unpack('!H', message.read(2))[0]
-    message.seek(rd_len, os.SEEK_CUR)     # skip rd_content
+    ttl = struct.unpack("!I", message.read(4))[0]
+    rd_len = struct.unpack("!H", message.read(2))[0]
+    message.seek(rd_len, os.SEEK_CUR)  # skip rd_content
     return Struct(ttl_offset=ttl_offset, ttl=ttl)
+
 
 def _parse_domain_labels(message):
     labels = []
     len = ord(message.read(1))
     while len > 0:
-        if len >= 64:   # domain name compression
+        if len >= 64:  # domain name compression
             len = len & 0x3f
             offset = (len << 8) + ord(message.read(1))
             mesg = StringIO(message.getvalue())
@@ -157,8 +185,10 @@ def _parse_domain_labels(message):
             len = ord(message.read(1))
     return labels
 
+
 def parse_domain_name(message):
-    return '.'.join(_parse_domain_labels(message))
+    return ".".join(_parse_domain_labels(message))
+
 
 def addr_p2n(addr):
     try:
@@ -166,15 +196,14 @@ def addr_p2n(addr):
     except socket.error:
         return socket.inet_pton(socket.AF_INET6, addr)
 
+
 def refresh_blacklist():
     global BLACKLIST_LAST_CHECKED, blacklist
 
     # we also check for not exists because the pyc file may be left around.
     # in that case, blacklist name will exist, but the file will not
     if not blacklist or not exists(BLACKLIST_FILE):
-        print(
-            "couldn't find %s, creating a default blacklist" % BLACKLIST_FILE
-        )
+        print("couldn't find %s, creating a default blacklist" % BLACKLIST_FILE)
         with open(BLACKLIST_FILE, "w") as h:
             h.write(DEFAULT_BLACKLIST)
         import focus_blacklist as blacklist
@@ -185,6 +214,7 @@ def refresh_blacklist():
         print("blacklist %s changed, reloading" % BLACKLIST_FILE)
         reload(blacklist)
         BLACKLIST_LAST_CHECKED = changed
+
 
 def can_visit(domain):
     """ determine if the domain is blacklisted at this time """
@@ -204,9 +234,8 @@ def can_visit(domain):
     for i in xrange(len(parts) - 1):
         domain_fn_name = "domain_" + ".".join(parts[i:])
         domain_fn_name = re.sub(
-            "[" + DOMAIN_SPECIAL_CHARACTERS + "]",
-            "_",
-            domain_fn_name)
+            "[" + DOMAIN_SPECIAL_CHARACTERS + "]", "_", domain_fn_name
+        )
         fn = getattr(blacklist, domain_fn_name, None)
 
         if fn:
@@ -222,33 +251,28 @@ DNS_TYPE_A = 1
 DNS_TYPE_AAAA = 28
 DNS_CLASS_IN = 1
 
-class DNSProxyHandler(BaseRequestHandler):
 
+class DNSProxyHandler(BaseRequestHandler):
     def handle(self):
         reqdata, sock = self.request
         req = parse_dns_message(reqdata)
         q = req.question
-        if (q.type_ in (DNS_TYPE_A, DNS_TYPE_AAAA) and
-                (q.class_ == DNS_CLASS_IN)):
+        if q.type_ in (DNS_TYPE_A, DNS_TYPE_AAAA) and (
+            q.class_ == DNS_CLASS_IN
+        ):
             if can_visit(q.name):
                 # Just continue and work normal
                 pass
             else:
-                fail_ip = addr_p2n('127.0.0.1')
-                rspdata = self._generate_dns_response_data(
-                    reqdata,
-                    q,
-                    fail_ip
-                )
+                fail_ip = addr_p2n("127.0.0.1")
+                rspdata = self._generate_dns_response_data(reqdata, q, fail_ip)
                 sock.sendto(rspdata, self.client_address)
                 return
 
             for packed_ip, host in self.server.host_lines:
                 if q.name.endswith(host):
                     rspdata = self._generate_dns_response_data(
-                        reqdata,
-                        q,
-                        packed_ip
+                        reqdata, q, packed_ip
                     )
                     sock.sendto(rspdata, self.client_address)
                     return
@@ -270,8 +294,9 @@ class DNSProxyHandler(BaseRequestHandler):
             return
 
         if not self.server.disable_cache:
-            cache[cache_key] = Struct(rspdata=rspdata,
-                                      cache_time=int(time.time()))
+            cache[cache_key] = Struct(
+                rspdata=rspdata, cache_time=int(time.time())
+            )
         sock.sendto(rspdata, self.client_address)
 
     def _get_response(self, data):
@@ -285,8 +310,37 @@ class DNSProxyHandler(BaseRequestHandler):
             return rspdata
         except timeout:
             print(
-                'Fetching DNS response from {} timed out'.format(
+                "Fetching DNS response from {} timed out".format(
                     self.server.dns_server
+                )
+                + "\n"
+                + "Fetching DNS response from {}".format(
+                    self.server.backup_server
+                )
+            )
+        except socket.error as err:
+            print(err)
+        finally:
+            sock.close()
+
+    def _get_response_from_backup_dns_server(self, data):
+        """
+        To fetch response from backup dns server
+        :data: DNS request data
+        :returns: response from backup dns server
+
+        """
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.connect((self.server.backup_server, 53))
+            sock.sendall(data)
+            sock.settimeout(60)
+            rspdata = sock.recv(65535)
+            return rspdata
+        except timeout:
+            print(
+                "Fetching DNS response from backup_server {} timed out".format(
+                    self.server.backup_server
                 )
             )
         except socket.error as err:
@@ -296,49 +350,53 @@ class DNSProxyHandler(BaseRequestHandler):
 
     def _generate_dns_response_data(self, reqdata, q, packed_ip):
         # header, qd=1, an=1, ns=0, ar=0
-        rspdata = (reqdata[:2] + '\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00')
-        rspdata += reqdata[12:q.end_offset]
+        rspdata = reqdata[:2] + "\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00"
+        rspdata += reqdata[12 : q.end_offset]
         # answer
-        rspdata += '\xc0\x0c'   # pointer to domain name
+        rspdata += "\xc0\x0c"  # pointer to domain name
         # type, 1 for ip4, 28 for ip6
         if len(packed_ip) == 4:
-            rspdata += '\x00\x01'   # 1 for ip4
+            rspdata += "\x00\x01"  # 1 for ip4
         else:
-            rspdata += '\x00\x1c'   # 28 for ip6
+            rspdata += "\x00\x1c"  # 28 for ip6
         # class: 1, ttl: 2000(0x000007d0)
-        rspdata += '\x00\x01\x00\x00\x07\xd0'
-        rspdata += '\x00' + chr(len(packed_ip))  # rd_len
+        rspdata += "\x00\x01\x00\x00\x07\xd0"
+        rspdata += "\x00" + chr(len(packed_ip))  # rd_len
         rspdata += packed_ip
         return rspdata
+
 
 def update_ttl(reqdata, cache_entry):
     rspdata, cache_time = cache_entry.rspdata, cache_entry.cache_time
     rspbytes = bytearray(rspdata)
-    rspbytes[:2] = reqdata[:2]          # update id
+    rspbytes[:2] = reqdata[:2]  # update id
     current_time = int(time.time())
     time_interval = current_time - cache_time
     rsp = parse_dns_message(rspdata)
     for record in rsp.records:
         if record.ttl <= time_interval:
             return None
-        rspbytes[record.ttl_offset:record.ttl_offset+4] = (
-            struct.pack('!I', record.ttl-time_interval)
+        rspbytes[record.ttl_offset : record.ttl_offset + 4] = struct.pack(
+            "!I", record.ttl - time_interval
         )
     return str(rspbytes)
 
+
 def load_hosts(hosts_file):
-    'load hosts config, only extract config line contains wildcard domain name'
+    "load hosts config, only extract config line contains wildcard domain name"
+
     def wildcard_line(line):
         parts = line.strip().split()[:2]
         if len(parts) < 2:
             return False
-        if not parts[1].startswith('*'):
+        if not parts[1].startswith("*"):
             return False
         try:
             packed_ip = addr_p2n(parts[0])
             return packed_ip, parts[1][1:]
         except socket.error:
             return None
+
     with open(hosts_file) as hosts_in:
         hostlines = []
         for line in hosts_in:
@@ -347,14 +405,19 @@ def load_hosts(hosts_file):
                 hostlines.append(hostline)
         return hostlines
 
-class DNSProxyServer(ThreadingUDPServer):
 
-    def __init__(self, dns_server,
-                 disable_cache=False,
-                 host='127.0.0.1',
-                 port=53,
-                 hosts_file=DEFAULT_FILE):
+class DNSProxyServer(ThreadingUDPServer):
+    def __init__(
+        self,
+        dns_server,
+        backup_server=None,
+        disable_cache=False,
+        host="127.0.0.1",
+        port=53,
+        hosts_file=DEFAULT_FILE,
+    ):
         self.dns_server = dns_server
+        self.backup_server = backup_server
         self.hosts_file = hosts_file
         self.host_lines = load_hosts(hosts_file)
         self.disable_cache = disable_cache
@@ -362,5 +425,5 @@ class DNSProxyServer(ThreadingUDPServer):
         ThreadingUDPServer.__init__(self, (host, port), DNSProxyHandler)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
