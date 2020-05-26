@@ -125,5 +125,5 @@ FAQ
 
 TODO
 ====
-
+[ ] Add commandline option to pass blacklist python file.
 [ ] Add another threaded application server like flask to show motivational quotes while opening the procrastinating sites.
