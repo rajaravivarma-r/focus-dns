@@ -139,8 +139,11 @@ class Struct(object):
             setattr(self, name, value)
 
 
-def parse_dns_message(data):
-    message = BytesIO(data)
+def parse_dns_message(data: str):
+    print('\n\n\n')
+    print(data)
+    print('\n\n\n')
+    message = BytesIO(data.decode())
     message.seek(4)  # skip id, flag
     c_qd, c_an, c_ns, c_ar = struct.unpack("!4H", message.read(8))
     # parse question
@@ -188,8 +191,7 @@ def _parse_domain_labels(message):
 
 
 def parse_domain_name(message):
-    msgs = (i.decode() for i in _parse_domain_labels(message))
-    return ".".join(msgs)
+    return ".".join(_parse_domain_labels(message))
 
 
 def addr_p2n(addr):
@@ -205,7 +207,7 @@ def refresh_blacklist():
     # we also check for not exists because the pyc file may be left around.
     # in that case, blacklist name will exist, but the file will not
     if not blacklist or not exists(BLACKLIST_FILE):
-        print(("couldn't find %s, creating a default blacklist" % BLACKLIST_FILE))
+        print("couldn't find %s, creating a default blacklist" % BLACKLIST_FILE)
         with open(BLACKLIST_FILE, "w") as h:
             h.write(DEFAULT_BLACKLIST)
         import focus_blacklist as blacklist
@@ -213,7 +215,7 @@ def refresh_blacklist():
     # has it changed?
     changed = os.stat(BLACKLIST_FILE).st_mtime
     if changed > BLACKLIST_LAST_CHECKED:
-        print(("blacklist %s changed, reloading" % BLACKLIST_FILE))
+        print("blacklist %s changed, reloading" % BLACKLIST_FILE)
         importlib.reload(blacklist)
         BLACKLIST_LAST_CHECKED = changed
 
@@ -257,6 +259,7 @@ DNS_CLASS_IN = 1
 class DNSProxyHandler(BaseRequestHandler):
     def handle(self):
         reqdata, sock = self.request
+        breakpoint()
         req = parse_dns_message(reqdata)
         q = req.question
         if q.type_ in (DNS_TYPE_A, DNS_TYPE_AAAA) and (
@@ -311,7 +314,7 @@ class DNSProxyHandler(BaseRequestHandler):
             rspdata = sock.recv(65535)
             return rspdata
         except timeout:
-            print((
+            print(
                 "Fetching DNS response from {} timed out".format(
                     self.server.dns_server
                 )
@@ -319,7 +322,7 @@ class DNSProxyHandler(BaseRequestHandler):
                 + "Fetching DNS response from {}".format(
                     self.server.backup_server
                 )
-            ))
+            )
         except socket.error as err:
             print(err)
         finally:
@@ -340,11 +343,11 @@ class DNSProxyHandler(BaseRequestHandler):
             rspdata = sock.recv(65535)
             return rspdata
         except timeout:
-            print((
+            print(
                 "Fetching DNS response from backup_server {} timed out".format(
                     self.server.backup_server
                 )
-            ))
+            )
         except socket.error as err:
             print(err)
         finally:
@@ -352,18 +355,18 @@ class DNSProxyHandler(BaseRequestHandler):
 
     def _generate_dns_response_data(self, reqdata, q, packed_ip):
         # header, qd=1, an=1, ns=0, ar=0
-        rspdata = reqdata[:2] + b"\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00"
+        rspdata = reqdata[:2] + "\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00"
         rspdata += reqdata[12 : q.end_offset]
         # answer
-        rspdata += b"\xc0\x0c"  # pointer to domain name
+        rspdata += "\xc0\x0c"  # pointer to domain name
         # type, 1 for ip4, 28 for ip6
         if len(packed_ip) == 4:
-            rspdata += b"\x00\x01"  # 1 for ip4
+            rspdata += "\x00\x01"  # 1 for ip4
         else:
-            rspdata += b"\x00\x1c"  # 28 for ip6
+            rspdata += "\x00\x1c"  # 28 for ip6
         # class: 1, ttl: 2000(0x000007d0)
-        rspdata += b"\x00\x01\x00\x00\x07\xd0"
-        rspdata += b"\x00" + chr(len(packed_ip)).encode()  # rd_len
+        rspdata += "\x00\x01\x00\x00\x07\xd0"
+        rspdata += "\x00" + chr(len(packed_ip))  # rd_len
         rspdata += packed_ip
         return rspdata
 
@@ -387,13 +390,8 @@ def update_ttl(reqdata, cache_entry):
 def load_hosts(hosts_file):
     "load hosts config, only extract config line contains wildcard domain name"
 
-    def parts_of_line(line):
-        parts = line.strip().split()[:2]
-        return parts
-
-
     def wildcard_line(line):
-        parts = parts_of_line(line)
+        parts = line.strip().split()[:2]
         if len(parts) < 2:
             return False
         if not parts[1].startswith("*"):
@@ -404,24 +402,10 @@ def load_hosts(hosts_file):
         except socket.error:
             return None
 
-    def entry_line(line):
-        if line.startswith('#'): # It is a comment, can be ignored
-            return None
-
-        parts = parts_of_line(line)
-        if len(parts) < 2:
-            return False
-        try:
-            packed_ip = addr_p2n(parts[0])
-            return packed_ip, parts[1]
-        except socket.error:
-            return None
-
-
     with open(hosts_file) as hosts_in:
         hostlines = []
         for line in hosts_in:
-            hostline = wildcard_line(line) or entry_line(line)
+            hostline = wildcard_line(line)
             if hostline:
                 hostlines.append(hostline)
         return hostlines
