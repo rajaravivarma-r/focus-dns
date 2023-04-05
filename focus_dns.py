@@ -381,7 +381,7 @@ def update_ttl(reqdata, cache_entry):
         rspbytes[record.ttl_offset : record.ttl_offset + 4] = struct.pack(
             "!I", record.ttl - time_interval
         )
-    return str(rspbytes)
+    return rspbytes
 
 
 def load_hosts(hosts_file):
