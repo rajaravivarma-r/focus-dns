@@ -14,7 +14,7 @@ Starting
 
 ## Now start Focus:
 
-    sudo FOCUS_ROOT="$HOME/focus/" python focus-dns.py
+    sudo FOCUS_ROOT="$HOME/Github/focus-dns" python focus_dns.py --server=1.1.1.1 --backup-server=8.8.8.8
 
 where `FOCUS_ROOT` is where the **focus_blacklist.py** will be created.
 
